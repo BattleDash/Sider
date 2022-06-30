@@ -32,7 +32,7 @@ repositories {
   maven { url 'https://nexus.battleda.sh/repository/maven-releases' }
 }
 dependencies {
-  compile 'me.battledash.sider:Sider:1.0.0'
+  implementation 'me.battledash.sider:Sider:1.0.0'
 }
 ```
 
@@ -91,7 +91,7 @@ SiderMessageChannel messageChannel = messageManager.getChannel("join_ticketing")
 
 Once you have the channel, you can send and receive messages on it.
 
-Sending a message globally:
+Sending a message to all servers listening on the channel:
 ```java
 messageChannel.send(new ServerTicketRequestMessage());
 ```
