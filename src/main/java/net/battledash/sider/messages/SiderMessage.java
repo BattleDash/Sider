@@ -27,11 +27,11 @@ public abstract class SiderMessage {
         return async;
     }
 
-    public final void serialize(SiderOutputStream stream) throws IOException {
+    public void serialize(SiderOutputStream stream) throws IOException {
         stream.writeUTF(GSON.toJson(this));
     }
 
-    public final void deserialize(SiderInputStream stream) throws IOException {
+    public void deserialize(SiderInputStream stream) throws IOException {
         Gson gson = new GsonBuilder().registerTypeAdapter(getClass(), new SiderMessageDeserializer<>(this)).create();
         gson.fromJson(stream.readUTF(), getClass());
     }

@@ -79,6 +79,26 @@ class ServerTicketRequestMessage extends SiderMessage {
 }
 ```
 
+Sider uses Json for message serialization by default, but you can also override the `serialize` and `deserialize` methods of `SiderMessage`, to implement your own solution.
+
+```java
+class TestMessage extends SiderMessage {
+
+    private String username;
+    
+    @Override
+    public void serialize(SiderOutputStream stream) throws IOException {
+        stream.writeUTF(username);
+    }
+
+    @Override
+    public void deserialize(SiderInputStream stream) throws IOException {
+        username = stream.readUTF();
+    }
+
+}
+```
+
 #### Sending messages
 
 Messages use channels, so to send a message you first need to determine which
