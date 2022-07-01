@@ -132,6 +132,6 @@ messageChannel.listen(
 );
 ```
 
-You can also include a final boolean parameter as false, if you want the server that sent to message to also receive it.
+You can also include a final boolean parameter as false, if you want the server that sent the message to also receive it.
 
 If you do not set a Sider ID yourself, a random UUID is used.
