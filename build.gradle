@@ -8,6 +8,7 @@ version '1.0.0'
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -16,6 +17,7 @@ dependencies {
 
     implementation group: 'redis.clients', name: 'jedis', version: '4.2.3'
     implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
+    implementation 'com.github.HyperSkys:Baby-Maker:3.0.0-RELEASE'
 }
 
 test {
