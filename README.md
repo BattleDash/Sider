@@ -32,7 +32,7 @@ repositories {
   maven { url 'https://nexus.battleda.sh/repository/maven-releases' }
 }
 dependencies {
-  implementation 'me.battledash.sider:Sider:1.0.0'
+  implementation 'net.battledash.sider:Sider:1.0.0'
 }
 ```
 
