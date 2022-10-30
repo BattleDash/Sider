@@ -7,14 +7,14 @@ Its intended use case and design is for Minecraft Server Networks, but it can be
 
 # Install
 
-Sider is available on my repository.
+Sider is available on JitPack.
 
 Maven:
 ```xml
 <repositories>
   <repository>
-    <id>battledash</id>
-    <url>https://nexus.battleda.sh/repository/maven-releases</url>
+    <id>JitPack</id>
+    <url>https://jitpack.io</url>
   </repository>
 </repositories>
 <dependencies>
@@ -29,7 +29,7 @@ Maven:
 Gradle:
 ```groovy
 repositories {
-  maven { url 'https://nexus.battleda.sh/repository/maven-releases' }
+  maven { url 'https://jitpack.io' }
 }
 dependencies {
   implementation 'me.battledash.sider:Sider:1.0.0'
