@@ -24,17 +24,30 @@ test {
 }
 
 jar {
-    enabled = true
+    enabled = false
     archivesBaseName = 'Sider'
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+shadowJar {
+    archiveName = "$baseName-$version.$extension"
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+    archives shadowJar
 }
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
-
-task copyToBuildsDir(type: Copy) {
-    from 'build/libs'
-    into '../bin'
-}
-
-copyToBuildsDir.dependsOn(shadowJar)
