@@ -24,7 +24,7 @@ test {
 }
 
 jar {
-    enabled = false
+    enabled = true
     archivesBaseName = 'Sider'
 }
 
