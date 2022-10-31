@@ -4,6 +4,10 @@ import java.util.function.Supplier;
 
 public interface SiderMessageChannel {
 
+    <T extends SiderMessage> void send(SiderMessage message, Class<T> responseClass,
+                                       Supplier<T> responseCreator, MessageListener<T> responseCallback,
+                                       String... recipients);
+
     void send(SiderMessage message, String... recipients);
 
     <T extends SiderMessage> void listen(Class<T> messageClass, Supplier<T> messageCreator, MessageListener<T> listener, boolean ignoreSameServer);

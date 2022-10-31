@@ -4,12 +4,9 @@ import net.battledash.sider.Sider;
 import net.battledash.sider.messages.SiderMessage;
 import net.battledash.sider.messages.SiderMessageChannel;
 import net.battledash.sider.messages.SiderMessageManager;
-import net.battledash.sider.stream.SiderInputStream;
-import net.battledash.sider.stream.SiderOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -21,7 +18,7 @@ public class SiderMessageTest {
 
     @BeforeEach
     public void setup() {
-        Sider sider = new Sider(System.getenv("REDIS_HOST"), Integer.parseInt(System.getenv("REDIS_PORT")));
+        Sider sider = new Sider("localhost", 6379);
         manager = sider.getMessageManager();
     }
 
@@ -34,10 +31,23 @@ public class SiderMessageTest {
         String username = "Test";
         channel.send(new TestMessage(username));
 
-        channel.listen(TestMessage.class, TestMessage::new, (s, m) -> {
-            assertEquals(m.username, username);
-            System.out.println("Received username: " + m.username + " from: " + s);
-        }, false);
+        channel.listen(TestMessage.class, TestMessage::new, (s, m) ->
+                assertEquals(m.username, username), false);
+
+        lock.await(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testMessageReply() throws InterruptedException {
+        CountDownLatch lock = new CountDownLatch(1);
+
+        SiderMessageChannel channel = manager.getChannel("siderChannelTest");
+
+        String username = "Test";
+
+        // This might fail because ignoreSameServer is implicitly true, will fix later
+        channel.send(new TestMessage(username), TestMessageReply.class, TestMessageReply::new,
+                ((senderSiderId, message) -> assertEquals(username, message.getUsername())));
 
         lock.await(5, TimeUnit.SECONDS);
     }
@@ -53,6 +63,22 @@ public class SiderMessageTest {
         TestMessage() {
         }
 
+    }
+
+    static class TestMessageReply extends SiderMessage {
+
+        private String username;
+
+        TestMessageReply(String username) {
+            this.username = username;
+        }
+
+        TestMessageReply() {
+        }
+
+        public String getUsername() {
+            return username;
+        }
     }
 
 }

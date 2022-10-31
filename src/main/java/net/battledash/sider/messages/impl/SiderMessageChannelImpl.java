@@ -44,8 +44,9 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
         });
     }
 
-    public <T extends SiderMessage> void send(SiderMessage message, String[] recipients, Class<T> responseClass,
-                                              Supplier<T> responseCreator, MessageListener<T> responseCallback) {
+    public <T extends SiderMessage> void send(SiderMessage message, Class<T> responseClass,
+                                              Supplier<T> responseCreator, MessageListener<T> responseCallback,
+                                              String... recipients) {
         listen(responseClass, responseCreator, ((senderSiderId, responseMessage) -> {
             if (responseMessage.getNonce().equals(message.getNonce())) {
                 responseCallback.onMessage(senderSiderId, responseMessage);
