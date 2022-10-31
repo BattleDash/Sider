@@ -8,23 +8,34 @@ import net.battledash.sider.stream.SiderOutputStream;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.UUID;
 
 public abstract class SiderMessage {
 
     private static final Gson GSON = new Gson();
 
+    private final UUID nonce;
     private final transient boolean async;
 
-    public SiderMessage(boolean async) {
+    public SiderMessage(UUID nonce, boolean async) {
+        this.nonce = nonce;
         this.async = async;
     }
 
+    public SiderMessage(UUID nonce) {
+        this(nonce, true);
+    }
+
     public SiderMessage() {
-        this(true);
+        this(UUID.randomUUID(), true);
     }
 
     public boolean isAsync() {
         return async;
+    }
+
+    public UUID getNonce() {
+        return nonce;
     }
 
     public void serialize(SiderOutputStream stream) throws IOException {

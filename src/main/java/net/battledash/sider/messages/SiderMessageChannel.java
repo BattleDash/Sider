@@ -10,6 +10,8 @@ public interface SiderMessageChannel {
 
     <T extends SiderMessage> void listen(Class<T> messageClass, Supplier<T> messageCreator, MessageListener<T> listener);
 
+    <T extends SiderMessage> void unregister(Class<T> messageClass);
+
     @FunctionalInterface
     interface MessageListener<T extends SiderMessage> {
 

@@ -14,6 +14,9 @@ import redis.clients.jedis.util.SafeEncoder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
@@ -41,6 +44,16 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
         });
     }
 
+    public <T extends SiderMessage> void send(SiderMessage message, String[] recipients, Class<T> responseClass,
+                                              Supplier<T> responseCreator, MessageListener<T> responseCallback) {
+        listen(responseClass, responseCreator, ((senderSiderId, responseMessage) -> {
+            if (responseMessage.getNonce().equals(message.getNonce())) {
+                responseCallback.onMessage(senderSiderId, responseMessage);
+            }
+        }), true, true);
+        send(message, recipients);
+    }
+
     public void send(SiderMessage message, String... recipients) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -56,7 +69,8 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
                 sos.writeInt(HashUtil.hash(message.getClass().getName()));
                 message.serialize(sos);
             } catch (IOException e) {
-                logger.severe("Failed to write networkable message " + message.getClass().getSimpleName() + "  to channel " + new String(channel));
+                logger.severe("Failed to write networkable message " + message.getClass().getSimpleName()
+                        + " to channel " + new String(channel));
                 throw new RuntimeException(e);
             }
 
@@ -75,12 +89,24 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
         }
     }
 
-    public <T extends SiderMessage> void listen(Class<T> messageClass, Supplier<T> messageCreator, MessageListener<T> listener, boolean ignoreSameServer) {
-        listeners.put(messageClass, (MessageRegistration<SiderMessage>) new MessageRegistration<>(messageCreator, listener, ignoreSameServer));
+    public <T extends SiderMessage> void listen(Class<T> messageClass, Supplier<T> messageCreator,
+                                                MessageListener<T> listener, boolean ignoreSameServer, boolean runOnce) {
+        listeners.put(messageClass, (MessageRegistration<SiderMessage>) new MessageRegistration<>(messageCreator, listener, ignoreSameServer, runOnce));
     }
 
-    public <T extends SiderMessage> void listen(Class<T> messageClass, Supplier<T> messageCreator, MessageListener<T> listener) {
-        listeners.put(messageClass, (MessageRegistration<SiderMessage>) new MessageRegistration<>(messageCreator, listener, true));
+    public <T extends SiderMessage> void listen(Class<T> messageClass, Supplier<T> messageCreator,
+                                                MessageListener<T> listener, boolean ignoreSameServer) {
+        listen(messageClass, messageCreator, listener, ignoreSameServer, false);
+    }
+
+    public <T extends SiderMessage> void listen(Class<T> messageClass, Supplier<T> messageCreator,
+                                                MessageListener<T> listener) {
+        listen(messageClass, messageCreator, listener, true);
+    }
+
+    @Override
+    public <T extends SiderMessage> void unregister(Class<T> messageClass) {
+        listeners.removeAll(messageClass);
     }
 
     @Override
@@ -119,7 +145,7 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
                 return;
             }
 
-            for (MessageRegistration<SiderMessage> registration : listeners.get(messageClass)) {
+            for (MessageRegistration<SiderMessage> registration : new ArrayList<>(listeners.get(messageClass))) {
                 if (registration.isIgnoreSameServer() && hashedSender == siderId) {
                     continue;
                 }
@@ -133,6 +159,10 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
                 } else {
                     listener.onMessage(senderSider, siderMessage);
                 }
+
+                if (registration.isRunOnce()) {
+                    listeners.remove(messageClass, registration);
+                }
             }
         } catch (IOException e) {
             logger.severe("Failed to read networkable message from channel " + new String(channel));
@@ -145,11 +175,13 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
         private final Supplier<T> messageCreator;
         private final MessageListener<T> listener;
         private final boolean ignoreSameServer;
+        private final boolean runOnce;
 
-        public MessageRegistration(Supplier<T> messageCreator, MessageListener<T> listener, boolean ignoreSameServer) {
+        public MessageRegistration(Supplier<T> messageCreator, MessageListener<T> listener, boolean ignoreSameServer, boolean runOnce) {
             this.messageCreator = messageCreator;
             this.listener = listener;
             this.ignoreSameServer = ignoreSameServer;
+            this.runOnce = runOnce;
         }
 
         public Supplier<T> getMessageCreator() {
@@ -164,6 +196,9 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
             return ignoreSameServer;
         }
 
+        public boolean isRunOnce() {
+            return runOnce;
+        }
     }
 
 }
