@@ -10,6 +10,9 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.UUID;
 
+/**
+ * The base class of all Sider networkable messages
+ */
 public abstract class SiderMessage {
 
     private static final Gson GSON = new Gson();

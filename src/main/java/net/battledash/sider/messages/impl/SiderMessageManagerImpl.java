@@ -9,7 +9,6 @@ import net.battledash.sider.serialization.SiderSchemable;
 import net.battledash.sider.serialization.types.GsonSerializationScheme;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 

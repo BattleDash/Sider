@@ -85,11 +85,16 @@ public class SiderDepot<V> extends SiderSchemable<V> implements Map<String, V> {
 
         try (Jedis jedis = sider.getPool().getResource()) {
             V previous = get(key);
+
+            byte[] encodedKey = SafeEncoder.encode(key);
+            byte[] encodedData = value == null ? null : getSerializer().serialize(value);
+
             if (absent) {
-                jedis.hsetnx(this.key, SafeEncoder.encode(key), value == null ? null : getSerializer().serialize(value));
+                jedis.hsetnx(this.key, encodedKey, encodedData);
             } else {
-                jedis.hset(this.key, SafeEncoder.encode(key), value == null ? null : getSerializer().serialize(value));
+                jedis.hset(this.key, encodedKey, encodedData);
             }
+
             return previous;
         }
     }
@@ -173,11 +178,10 @@ public class SiderDepot<V> extends SiderSchemable<V> implements Map<String, V> {
             Set<Entry<String, V>> entries = new HashSet<>();
 
             for (Map.Entry<byte[], byte[]> entry : jedis.hgetAll(key).entrySet()) {
-                SiderDepotEntry<V> e = new SiderDepotEntry<>(this,
-                        new String(entry.getKey()),
-                        getSerializer().deserialize(entry.getValue())
-                );
-                entries.add(e);
+                String key = new String(entry.getKey());
+                V data = getSerializer().deserialize(entry.getValue());
+
+                entries.add(new SiderDepotEntry<>(this, key, data));
             }
 
             return entries;
