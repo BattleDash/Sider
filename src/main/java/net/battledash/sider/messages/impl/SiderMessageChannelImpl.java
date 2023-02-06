@@ -78,11 +78,9 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
             gzos.finish();
 
             manager.getService().execute(() -> {
-
                 try (Jedis jedis = manager.getSider().getPool().getResource()) {
                     jedis.publish(channel, baos.toByteArray());
                 }
-
             });
         } catch (IOException e) {
             logger.severe("Failed to send networkable message " + message.getClass().getSimpleName() + "  to channel " + new String(channel));
