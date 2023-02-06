@@ -15,15 +15,18 @@ import java.util.concurrent.Executors;
 
 public class SiderMessageManagerImpl extends SiderSchemable<SiderMessage> implements SiderMessageManager {
 
-    private final Sider sider;
-
     private final ExecutorService service = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("sider-message-pump-%d").build());
-
     private final Map<String, SiderMessageChannel> channels = new HashMap<>();
+
+    private final Sider sider;
 
     public SiderMessageManagerImpl(Sider sider) {
         super(new GsonSerializationScheme<>(SiderMessage.class));
         this.sider = sider;
+    }
+
+    public SiderMessageChannel getChannel(String channel) {
+        return channels.computeIfAbsent(channel, s -> new SiderMessageChannelImpl(this, s));
     }
 
     public Sider getSider() {
@@ -32,10 +35,6 @@ public class SiderMessageManagerImpl extends SiderSchemable<SiderMessage> implem
 
     protected ExecutorService getService() {
         return service;
-    }
-
-    public SiderMessageChannel getChannel(String channel) {
-        return channels.computeIfAbsent(channel, s -> new SiderMessageChannelImpl(this, s));
     }
 
 }
