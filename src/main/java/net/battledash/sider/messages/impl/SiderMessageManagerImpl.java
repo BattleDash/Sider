@@ -15,9 +15,11 @@ import java.util.concurrent.Executors;
 
 public class SiderMessageManagerImpl extends SiderSchemable<SiderMessage> implements SiderMessageManager {
 
-    private final ExecutorService service = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("sider-message-pump-%d").build());
-    private final Map<String, SiderMessageChannel> channels = new HashMap<>();
+    private final ExecutorService service = Executors.newCachedThreadPool(
+            new ThreadFactoryBuilder().setNameFormat("sider-message-pump-%d").build()
+    );
 
+    private final Map<String, SiderMessageChannel> channels = new HashMap<>();
     private final Sider sider;
 
     public SiderMessageManagerImpl(Sider sider) {
