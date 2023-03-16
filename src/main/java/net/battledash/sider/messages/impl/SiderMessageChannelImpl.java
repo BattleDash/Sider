@@ -1,5 +1,6 @@
 package net.battledash.sider.messages.impl;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import net.battledash.sider.messages.SiderMessage;
@@ -15,8 +16,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
@@ -24,7 +25,7 @@ import java.util.zip.GZIPOutputStream;
 
 public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderMessageChannel {
 
-    private static final Logger logger = Logger.getLogger("SiderMessageChannel");
+    private static final Logger LOGGER = Logger.getLogger("SiderMessageChannel");
 
     private final SiderMessageManagerImpl manager;
 
@@ -32,6 +33,11 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
 
     private final Multimap<Class<? extends SiderMessage>, MessageRegistration<SiderMessage>> listeners =
             MultimapBuilder.hashKeys().linkedListValues().build();
+
+    /**
+     * Cached values of {@link HashUtil#hash(String)} ran on registered classes
+     */
+    private final Map<Integer, Class<? extends SiderMessage>> registeredClassHashes = new HashMap<>();
 
     protected SiderMessageChannelImpl(SiderMessageManagerImpl manager, String channel) {
         this.manager = manager;
@@ -70,7 +76,7 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
                 sos.writeInt(HashUtil.hash(message.getClass().getName()));
                 message.serialize(sos);
             } catch (IOException e) {
-                logger.severe("Failed to write networkable message " + message.getClass().getSimpleName()
+                LOGGER.severe("Failed to write networkable message " + message.getClass().getSimpleName()
                         + " to channel " + new String(channel));
                 throw new RuntimeException(e);
             }
@@ -83,13 +89,17 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
                 }
             });
         } catch (IOException e) {
-            logger.severe("Failed to send networkable message " + message.getClass().getSimpleName() + "  to channel " + new String(channel));
+            LOGGER.severe("Failed to send networkable message " + message.getClass().getSimpleName() + "  to channel " + new String(channel));
             throw new RuntimeException(e);
         }
     }
 
     public <T extends SiderMessage> void listen(Class<T> messageClass, Supplier<T> messageCreator,
                                                 MessageListener<T> listener, boolean ignoreSameServer, boolean runOnce) {
+        // Cache class name ahead of time
+        registeredClassHashes.put(HashUtil.hash(messageClass.getName()), messageClass);
+
+        //noinspection unchecked
         listeners.put(messageClass, (MessageRegistration<SiderMessage>) new MessageRegistration<>(messageCreator, listener, ignoreSameServer, runOnce));
     }
 
@@ -106,6 +116,7 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
     @Override
     public <T extends SiderMessage> void unregister(Class<T> messageClass) {
         listeners.removeAll(messageClass);
+        registeredClassHashes.remove(HashUtil.hash(messageClass.getName()));
     }
 
     @Override
@@ -131,14 +142,7 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
             }
 
             int messageTypeNameHash = sis.readInt();
-
-            Class<? extends SiderMessage> messageClass = null;
-            for (Class<? extends SiderMessage> clazz : listeners.keySet()) {
-                if (HashUtil.hash(clazz.getName()) == messageTypeNameHash) {
-                    messageClass = clazz;
-                    break;
-                }
-            }
+            Class<? extends SiderMessage> messageClass = registeredClassHashes.get(messageTypeNameHash);
 
             if (messageClass == null) {
                 return;
@@ -161,10 +165,14 @@ public class SiderMessageChannelImpl extends BinaryJedisPubSub implements SiderM
 
                 if (registration.isRunOnce()) {
                     listeners.remove(messageClass, registration);
+
+                    if (!listeners.containsKey(messageClass)) {
+                        registeredClassHashes.remove(HashUtil.hash(messageClass.getName()));
+                    }
                 }
             }
         } catch (IOException e) {
-            logger.severe("Failed to read networkable message from channel " + new String(channel));
+            LOGGER.severe("Failed to read networkable message from channel " + new String(channel));
             throw new RuntimeException(e);
         }
     }
